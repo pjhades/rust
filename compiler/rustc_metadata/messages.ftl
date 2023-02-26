@@ -177,6 +177,9 @@ metadata_no_transitive_needs_dep =
 metadata_failed_write_error =
     failed to write {$filename}: {$err}
 
+metadata_binary_output_to_tty =
+    can't write binary output type `metadata` to a tty
+
 metadata_missing_native_library =
     could not find native static library `{$libname}`, perhaps an -L flag is missing?
 

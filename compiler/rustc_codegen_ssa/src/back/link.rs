@@ -98,6 +98,12 @@ pub fn link_binary<'a>(
                 .tempdir()
                 .unwrap_or_else(|error| sess.emit_fatal(errors::CreateTempDir { error }));
             let path = MaybeTempDir::new(tmpdir, sess.opts.cg.save_temps);
+
+            if outputs.is_binary_output_written_to_tty(OutputType::Exe) {
+                sess.emit_err(errors::BinaryOutputToTty { shorthand: OutputType::Exe.shorthand() });
+                continue;
+            }
+
             let out_filename = out_filename(
                 sess,
                 crate_type,

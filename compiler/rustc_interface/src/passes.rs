@@ -446,6 +446,42 @@ fn escape_dep_env(symbol: Symbol) -> String {
     escaped
 }
 
+fn write_deps_to_file(
+    mut file: impl Write,
+    sess: &Session,
+    out_filenames: &[PathBuf],
+    files: &Vec<String>,
+) -> io::Result<()> {
+    for path in out_filenames {
+        writeln!(file, "{}: {}\n", path.display(), files.join(" "))?;
+    }
+
+    // Emit a fake target for each input file to the compilation. This
+    // prevents `make` from spitting out an error if a file is later
+    // deleted. For more info see #28735
+    for path in files {
+        writeln!(file, "{path}:")?;
+    }
+
+    // Emit special comments with information about accessed environment variables.
+    let env_depinfo = sess.parse_sess.env_depinfo.borrow();
+    if !env_depinfo.is_empty() {
+        let mut envs: Vec<_> =
+            env_depinfo.iter().map(|(k, v)| (escape_dep_env(*k), v.map(escape_dep_env))).collect();
+        envs.sort_unstable();
+        writeln!(file)?;
+        for (k, v) in envs {
+            write!(file, "# env-dep:{k}")?;
+            if let Some(v) = v {
+                write!(file, "={v}")?;
+            }
+            writeln!(file)?;
+        }
+    }
+
+    Ok(())
+}
+
 fn write_out_deps(tcx: TyCtxt<'_>, outputs: &OutputFilenames, out_filenames: &[PathBuf]) {
     // Write out dependency rules to the dep-info file if requested
     let sess = tcx.sess;
@@ -510,34 +546,12 @@ fn write_out_deps(tcx: TyCtxt<'_>, outputs: &OutputFilenames, out_filenames: &[P
             }
         }
 
-        let mut file = BufWriter::new(fs::File::create(&deps_filename)?);
-        for path in out_filenames {
-            writeln!(file, "{}: {}\n", path.display(), files.join(" "))?;
-        }
-
-        // Emit a fake target for each input file to the compilation. This
-        // prevents `make` from spitting out an error if a file is later
-        // deleted. For more info see #28735
-        for path in files {
-            writeln!(file, "{path}:")?;
-        }
-
-        // Emit special comments with information about accessed environment variables.
-        let env_depinfo = sess.parse_sess.env_depinfo.borrow();
-        if !env_depinfo.is_empty() {
-            let mut envs: Vec<_> = env_depinfo
-                .iter()
-                .map(|(k, v)| (escape_dep_env(*k), v.map(escape_dep_env)))
-                .collect();
-            envs.sort_unstable();
-            writeln!(file)?;
-            for (k, v) in envs {
-                write!(file, "# env-dep:{k}")?;
-                if let Some(v) = v {
-                    write!(file, "={v}")?;
-                }
-                writeln!(file)?;
-            }
+        if deps_filename.to_str() == Some("-") {
+            let mut file = BufWriter::new(io::stdout());
+            write_deps_to_file(&mut file, sess, out_filenames, &files)?;
+        } else {
+            let mut file = BufWriter::new(fs::File::create(&deps_filename)?);
+            write_deps_to_file(&mut file, sess, out_filenames, &files)?;
         }
     };
 

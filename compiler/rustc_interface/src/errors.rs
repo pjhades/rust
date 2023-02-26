@@ -108,3 +108,7 @@ pub struct IgnoringExtraFilename;
 #[derive(Diagnostic)]
 #[diag(interface_ignoring_out_dir)]
 pub struct IgnoringOutDir;
+
+#[derive(Diagnostic)]
+#[diag(interface_multiple_text_output_types_to_stdout)]
+pub struct MultipleTextOutputTypesToStdout;

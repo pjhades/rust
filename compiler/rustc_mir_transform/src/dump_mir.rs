@@ -21,7 +21,12 @@ impl<'tcx> MirPass<'tcx> for Marker {
 
 pub fn emit_mir(tcx: TyCtxt<'_>) -> io::Result<()> {
     let path = tcx.output_filenames(()).path(OutputType::Mir);
-    let mut f = io::BufWriter::new(File::create(&path)?);
-    write_mir_pretty(tcx, None, &mut f)?;
+    if path.to_str() == Some("-") {
+        let mut f = io::stdout();
+        write_mir_pretty(tcx, None, &mut f)?;
+    } else {
+        let mut f = io::BufWriter::new(File::create(&path)?);
+        write_mir_pretty(tcx, None, &mut f)?;
+    }
     Ok(())
 }

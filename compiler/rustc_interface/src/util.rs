@@ -493,6 +493,24 @@ pub fn collect_crate_types(session: &Session, attrs: &[ast::Attribute]) -> Vec<C
 }
 
 pub fn build_output_filenames(attrs: &[ast::Attribute], sess: &Session) -> OutputFilenames {
+    let named_text_types = sess
+        .opts
+        .output_types
+        .iter()
+        .filter(|(flavor, path)| flavor.is_text_output() && path == &&Some(PathBuf::from("-")))
+        .count();
+    let unnamed_text_types = sess
+        .opts
+        .output_types
+        .iter()
+        .filter(|(flavor, path)| flavor.is_text_output() && path.is_none())
+        .count();
+    if named_text_types > 1
+        || unnamed_text_types > 1 && sess.io.output_file == Some(PathBuf::from("-"))
+    {
+        sess.emit_fatal(errors::MultipleTextOutputTypesToStdout);
+    }
+
     match sess.io.output_file {
         None => {
             // "-" as input file will cause the parser to read from stdin so we

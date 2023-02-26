@@ -201,7 +201,10 @@ suffix may be added to the filename with the [`-C extra-filename`
 flag](codegen-options/index.md#extra-filename). The files are written to the
 current directory unless the [`--out-dir` flag](#option-out-dir) is used. Each
 emission type may also specify the output filename with the form `KIND=PATH`,
-which takes precedence over the `-o` flag.
+which takes precedence over the `-o` flag. Specifying `-o -` or `KIND=-` asks
+rustc to emit text output types (`asm`, `dep-info`, `llvm-ir` and `mir`) to standard output.
+For binary output types, if the standard output is a tty, this will result in an error unless
+it is redirected to a file.
 
 [LLVM bitcode]: https://llvm.org/docs/BitCodeFormat.html
 [LLVM IR]: https://llvm.org/docs/LangRef.html

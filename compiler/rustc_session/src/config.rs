@@ -331,7 +331,7 @@ impl OutputType {
         }
     }
 
-    fn shorthand(&self) -> &'static str {
+    pub fn shorthand(&self) -> &'static str {
         match *self {
             OutputType::Bitcode => "llvm-bc",
             OutputType::Assembly => "asm",
@@ -382,6 +382,18 @@ impl OutputType {
             OutputType::Metadata => "rmeta",
             OutputType::DepInfo => "d",
             OutputType::Exe => "",
+        }
+    }
+
+    pub fn is_text_output(&self) -> bool {
+        match *self {
+            OutputType::Assembly
+            | OutputType::LlvmAssembly
+            | OutputType::Mir
+            | OutputType::DepInfo => true,
+            OutputType::Bitcode | OutputType::Object | OutputType::Metadata | OutputType::Exe => {
+                false
+            }
         }
     }
 }
@@ -449,6 +461,10 @@ impl OutputTypes {
 
     pub fn contains_key(&self, key: &OutputType) -> bool {
         self.0.contains_key(key)
+    }
+
+    pub fn iter(&self) -> BTreeMapIter<'_, OutputType, Option<PathBuf>> {
+        self.0.iter()
     }
 
     pub fn keys(&self) -> BTreeMapKeysIter<'_, OutputType, Option<PathBuf>> {
@@ -758,6 +774,12 @@ impl OutputFilenames {
                 Some(dwo_out)
             }
         }
+    }
+
+    pub fn is_binary_output_written_to_tty(&self, flavor: OutputType) -> bool {
+        !flavor.is_text_output()
+            && self.path(flavor).to_str() == Some("-")
+            && atty::is(atty::Stream::Stdout)
     }
 }
 

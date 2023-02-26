@@ -16,6 +16,8 @@ codegen_ssa_copy_path = could not copy {$from} to {$to}: {$error}
 
 codegen_ssa_copy_path_buf = unable to copy {$source_file} to {$output_path}: {$error}
 
+codegen_ssa_binary_output_to_tty = can't write binary output type `{$shorthand}` to a tty
+
 codegen_ssa_ignoring_emit_path = ignoring emit path because multiple .{$extension} files were produced
 
 codegen_ssa_ignoring_output = ignoring -o because multiple .{$extension} files were produced

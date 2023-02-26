@@ -1,5 +1,6 @@
 use crate::errors::{
-    FailedCreateEncodedMetadata, FailedCreateFile, FailedCreateTempdir, FailedWriteError,
+    BinaryOutputToTty, FailedCreateEncodedMetadata, FailedCreateFile, FailedCreateTempdir,
+    FailedWriteError,
 };
 use crate::{encode_metadata, EncodedMetadata};
 
@@ -74,16 +75,22 @@ pub fn encode_and_write_metadata(tcx: TyCtxt<'_>) -> (EncodedMetadata, bool) {
     // this file always exists.
     let need_metadata_file = tcx.sess.opts.output_types.contains_key(&OutputType::Metadata);
     let (metadata_filename, metadata_tmpdir) = if need_metadata_file {
-        if let Err(err) = non_durable_rename(&metadata_filename, &out_filename) {
-            tcx.sess.emit_fatal(FailedWriteError { filename: out_filename, err });
+        let outputs = tcx.output_filenames(());
+        if outputs.is_binary_output_written_to_tty(OutputType::Metadata) {
+            tcx.sess.emit_err(BinaryOutputToTty);
+            (metadata_filename, Some(metadata_tmpdir))
+        } else {
+            if let Err(err) = non_durable_rename(&metadata_filename, &out_filename) {
+                tcx.sess.emit_fatal(FailedWriteError { filename: out_filename, err });
+            }
+            if tcx.sess.opts.json_artifact_notifications {
+                tcx.sess
+                    .parse_sess
+                    .span_diagnostic
+                    .emit_artifact_notification(&out_filename, "metadata");
+            }
+            (out_filename, None)
         }
-        if tcx.sess.opts.json_artifact_notifications {
-            tcx.sess
-                .parse_sess
-                .span_diagnostic
-                .emit_artifact_notification(&out_filename, "metadata");
-        }
-        (out_filename, None)
     } else {
         (metadata_filename, Some(metadata_tmpdir))
     };

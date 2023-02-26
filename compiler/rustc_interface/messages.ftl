@@ -50,3 +50,5 @@ interface_multiple_output_types_adaption =
 interface_ignoring_extra_filename = ignoring -C extra-filename flag due to -o flag
 
 interface_ignoring_out_dir = ignoring --out-dir flag due to -o flag
+
+interface_multiple_text_output_types_to_stdout = can't write multiple text output types to stdout

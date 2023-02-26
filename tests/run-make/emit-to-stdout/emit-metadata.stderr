@@ -1,0 +1,4 @@
+error: can't write binary output type `metadata` to a tty
+
+error: aborting due to previous error
+

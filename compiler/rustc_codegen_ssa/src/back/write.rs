@@ -536,7 +536,20 @@ fn produce_final_output_artifacts(
 
     // Produce final compile outputs.
     let copy_gracefully = |from: &Path, to: &Path| {
-        if let Err(e) = fs::copy(from, to) {
+        if to.to_str() == Some("-") {
+            match fs::File::open(from) {
+                Err(e) => {
+                    sess.emit_err(errors::CopyPath::new(from, Path::new("stdout"), e));
+                }
+                Ok(file) => {
+                    let mut reader = io::BufReader::new(file);
+                    let mut stdout = io::stdout();
+                    if let Err(e) = io::copy(&mut reader, &mut stdout) {
+                        sess.emit_err(errors::CopyPath::new(from, Path::new("stdout"), e));
+                    }
+                }
+            }
+        } else if let Err(e) = fs::copy(from, to) {
             sess.emit_err(errors::CopyPath::new(from, to, e));
         }
     };
@@ -547,7 +560,14 @@ fn produce_final_output_artifacts(
             //    to copy `foo.0.x` to `foo.x`.
             let module_name = Some(&compiled_modules.modules[0].name[..]);
             let path = crate_output.temp_path(output_type, module_name);
-            copy_gracefully(&path, &crate_output.path(output_type));
+            let output_path = crate_output.path(output_type);
+
+            if crate_output.is_binary_output_written_to_tty(output_type) {
+                sess.emit_err(errors::BinaryOutputToTty { shorthand: output_type.shorthand() });
+            } else {
+                copy_gracefully(&path, &output_path);
+            }
+
             if !sess.opts.cg.save_temps && !keep_numbered {
                 // The user just wants `foo.x`, not `foo.#module-name#.x`.
                 ensure_removed(sess.diagnostic(), &path);

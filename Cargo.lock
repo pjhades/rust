@@ -5323,6 +5323,7 @@ dependencies = [
 name = "rustc_session"
 version = "0.0.0"
 dependencies = [
+ "atty",
  "getopts",
  "libc",
  "rustc_ast",
